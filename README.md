@@ -1,1 +1,1 @@
-# topic-model
+# topic-modeling
