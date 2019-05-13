@@ -1,6 +1,7 @@
 \documentclass{article}
 \usepackage[utf8]{inputenc}
 \usepackage{amsmath}
+\usepackage{enumerate}
 
 \title{Topic Modeling Research}
 \author{Melody Jiang}
@@ -12,7 +13,30 @@
 
 \section{Possible Research Directions}
 
-Regarding the research area of topic modeling,
+\subsection{Two main approaches to clustering}
 
+\begin{enumerate}[(i)]
+  \item \textbf{Distance-based} clustering. Using this approach, we analyze matrix of pairwise distances. Namely, suppose $y_i$ and $y_j$ are data points, then $D$ is a distance matrix whose $d_{ij}$ entry represents distance between $y_i$ and $y_j$.
+  \item \textbf{Model-based} clustering. For example, $y_i \sim \sum_{h = 1}^k \pi_h k(\theta_h)$.
+\end{enumerate}
+
+\subsection{Two main problems in clustering}
+
+\begin{enumerate}[(i)]
+  \item sensitivity to kernel
+  \item issues in high dimensions(large p)
+\end{enumerate}
+
+\subsection{Semi-solutions}
+
+\begin{enumerate}
+  \item \textbf{C-Bayes}. All derivations from assumed models (e.g. kernel misspecification). See \cite{miller2018robust}.
+\end{enumerate}
+
+
+
+
+\bibliography{tm-bib}
+\bibliographystyle{unsrt}
 
 \end{document}
