@@ -1,0 +1,242 @@
+---
+title: "Pilot Experiment"
+author: "Melody Jiang"
+date: "5/27/2019"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+# Libraries
+library(tm) # text mining
+library(topicmodels) # topic modeling
+```
+
+```{r}
+# load data
+r8train <- read.table("data/reuters21578R8/r8-train-all-terms.txt", header = FALSE, sep = "\t")
+r8test <- read.table("data/reuters21578R8/r8-test-all-terms.txt", header = FALSE, sep = "\t")
+```
+
+```{r}
+# structure of data
+str(r8train)
+summary(r8train$V1)
+```
+
+```{r}
+# subset to 3 document classes for computational expense
+r8train <- r8train[which(r8train$V1 %in% c("crude","money-fx","trade")), ]
+rownames(r8train) <- 1:nrow(r8train) # renumber rows from 1
+r8test <- r8test[which(r8test$V1 %in% c("crude","money-fx","trade")), ]
+rownames(r8test) <- 1:nrow(r8test) # renumber rows from 1
+```
+
+```{r}
+# examine document in multiple classes
+length(unique(r8train$V2))
+# find indices of duplicate documents
+dup_index <- which(duplicated(r8train$V2) %in% TRUE)
+# remove duplicated documents
+r8train <- r8train[- dup_index, ]
+# check remaining classes
+unique(r8train$V1)
+# drop unused levels
+r8train$V1 <- droplevels(r8train$V1)
+# do the same for test set
+dup_index <- which(duplicated(r8test$V2) %in% TRUE)
+r8test <- r8test[- dup_index, ]
+unique(r8test$V1)
+r8test$V1 <- droplevels(r8test$V1)
+```
+
+```{r}
+# counts of each class
+table(r8train$V1)
+table(r8test$V1)
+```
+
+```{r}
+# Make a corpus
+
+source <- VectorSource(r8train$V2) # a vector source interprets each element of the vector as a document
+corpus <- Corpus(source) # create the corpus
+
+source_test <- VectorSource(r8test$V2)
+corpus_test <- Corpus(source_test)
+```
+
+```{r}
+# preprocessing
+# Some preprocessing has already been done. See https://www.cs.umb.edu/~smimarog/textmining/datasets/
+
+corpus <- tm_map(corpus, removeWords, stopwords('english')) # remove stopwords
+corpus[[1]]$content # inspect document
+corpus <- tm_map(corpus,stemDocument) # stemming
+corpus[[1]]$content # inspect document
+# remove customized stopwords
+myStopwords <- c("reuter", "said")
+corpus <- tm_map(corpus, removeWords, myStopwords)
+
+corpus_test <- tm_map(corpus_test, removeWords, stopwords('english')) # remove stopwords
+corpus_test[[1]]$content # inspect document
+corpus_test <- tm_map(corpus_test,stemDocument) # stemming
+corpus_test[[1]]$content # inspect document
+# remove customized stopwords
+myStopwords <- c("reuter", "said")
+corpus_test <- tm_map(corpus_test, removeWords, myStopwords)
+```
+
+```{r}
+# Create document-term matrix (dtm)
+dtm <- DocumentTermMatrix(corpus)
+dtm_test <- DocumentTermMatrix(corpus_test)
+# inspect dtm
+as.matrix(dtm)[10:20,200:210] # a portion of dtm
+#collapse matrix by summing over columns
+freq <- colSums(as.matrix(dtm))
+#create sort order (descending)
+ord <- order(freq,decreasing=TRUE)
+#List all terms in decreasing order of freq and write to disk
+freq[ord][1:100]
+write.csv(freq[ord], "word_freq.csv")
+```
+
+# Attempt to run topic model using Gibbs
+
+```{r}
+# Set parameters for Gibbs sampling
+burnin <- 4000
+iter <- 2000
+thin <- 500
+seed <-list(2003,5,63,100001,765)
+nstart <- 5
+best <- TRUE
+```
+
+```{r}
+# number of topics
+k <- 3
+```
+
+```{r}
+# Run LDA using Gibbs sampling
+ldaOut <-LDA(dtm,k, method="Gibbs", control=list(nstart=nstart, seed = seed, best=best, burnin = burnin, iter = iter, thin=thin))
+```
+
+```{r}
+#write out results
+#docs to topics
+ldaOut.topics <- as.matrix(topics(ldaOut))
+write.csv(ldaOut.topics,file=paste("LDAGibbs",k,"DocsToTopics.csv"))
+```
+
+```{r}
+#top 6 terms in each topic
+ldaOut.terms <- as.matrix(terms(ldaOut,6))
+write.csv(ldaOut.terms,file=paste("LDAGibbs",k,"TopicsToTerms.csv"))
+```
+
+```{r}
+#probabilities associated with each topic assignment
+topicProbabilities <- as.data.frame(ldaOut@gamma)
+write.csv(topicProbabilities,file=paste("LDAGibbs",k,"TopicProbabilities.csv"))
+```
+
+```{r}
+# perplexity
+perplexity(ldaOut, newdata = dtm_test, control = list(seed = 42))
+```
+
+# Comparison of different k's using Gibbs sampling
+
+```{r}
+k <- seq(from = 2, to = 10)
+perplexities_gibbs_diff_k <- vector(mode = "numeric", length = 0)
+
+for (i in k) {
+  start_time <- proc.time()
+  cat("k", i)
+  ldaOut_gibbs_diff_k <-LDA(dtm,k = i, method="Gibbs", control=list(nstart=nstart, seed = seed, best=best, burnin = burnin, iter = iter, thin=thin))
+  perplexities_gibbs_diff_k = c(perplexities_gibbs_diff_k, perplexity(ldaOut_gibbs_diff_k, newdata = dtm_test, control = list(seed = 42)))
+  print(proc.time() - start_time)
+}
+```
+
+```{r}
+# plot perplexitiy vs number of topics
+jpeg("gibbs_diff_k.jpg")
+plot(x = k, y = perplexities_gibbs_diff_k, type = "l", main = "Perplexity vs k using Gibbs sampling")
+dev.off()
+```
+
+```{r}
+# 50 topics
+k <- seq(from = 2, to = 50)
+perplexities_gibbs_diff_k <- vector(mode = "numeric", length = 0)
+
+for (i in k) {
+  start_time <- proc.time()
+  cat("k", i)
+  ldaOut_gibbs_diff_k <-LDA(dtm,k = i, method="Gibbs", control=list(nstart=nstart, seed = seed, best=best, burnin = burnin, iter = iter, thin=thin))
+  perplexities_gibbs_diff_k = c(perplexities_gibbs_diff_k, perplexity(ldaOut_gibbs_diff_k, newdata = dtm_test, control = list(seed = 42)))
+  print(proc.time() - start_time)
+}
+
+# plot perplexitiy vs number of topics
+jpeg("gibbs_diff_k_50.jpg")
+plot(x = k, y = perplexities_gibbs_diff_k, type = "l", main = "Perplexity vs k using Gibbs sampling")
+dev.off()
+```
+
+
+# Comparison of different k's using VEM
+
+```{r}
+k <- seq(from = 2, to = 10)
+perplexities_vem_diff_k = vector(mode = "numeric", length = 0)
+
+for (i in k) {
+  start_time <- proc.time()
+  cat("k", i)
+  ldaOut_vem_diff_k <-LDA(dtm,k = i, method="VEM", control=list(nstart=nstart, seed = seed, best=best))
+  perplexities_vem_diff_k = c(perplexities_vem_diff_k, perplexity(ldaOut_vem_diff_k, newdata = dtm_test, control = list(seed = 42)))
+  print(proc.time() - start_time)
+}
+```
+
+```{r}
+# plot perplexitiy vs number of topics
+jpeg("vem_diff_k.jpg")
+plot(x = k, y = perplexities_vem_diff_k, type = "l", main = "Perplexity vs k using VEM")
+dev.off()
+```
+
+# Comparison using different alphas using VEM
+
+```{r}
+alphas <- c(0.01, 0.1, 1, 5, 10, 25)
+k <- 3
+perplexities_vem_diff_alpha <- vector(mode = "numeric", length = 0)
+
+for (a in alphas) {
+  start_time <- proc.time()
+  cat("alpha = ", a)
+  ldaOut_vem_diff_alpha <-LDA(dtm,k = k, method="VEM", control=list(nstart=nstart, seed = seed, best=best, alpha = a, estimate.alpha = FALSE))
+  perplexities_vem_diff_alpha <- c(perplexities_vem_diff_alpha, perplexity(ldaOut_vem_diff_alpha, newdata = dtm_test, control = list(seed = 42)))
+  print(proc.time() - start_time)
+}
+```
+
+```{r}
+jpeg("vem_diff_alpha.jpg")
+plot(x = alphas, y = perplexities_vem_diff_alpha, type = "l", main = "Perplexity vs alpha using VEM", xaxt="n")
+axis(1, at = alphas)
+dev.off()
+```
+
+
+
