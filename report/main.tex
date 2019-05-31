@@ -3,6 +3,8 @@
 \usepackage{amsmath}
 \usepackage{enumerate}
 \usepackage{graphicx}
+\usepackage{tikz}
+\usetikzlibrary{bayesnet}
 
 \title{Topic Modeling Research}
 \author{Melody Jiang}
@@ -49,14 +51,59 @@
 
 Three main tasks in textmining are clustering, classification, and information extraction \cite{allahyari2017brief}. Topic modeling can be applied to all of these tasks \cite{lu2011investigating}. We would like to focus on the most commonly used topic model, Latent Dirichlet Allocation (LDA), and LDA's robustness in the documeng clustering task. Lu et al. investigated LDA's task performance in document clustering and found LDA's performance is quite sensitive to the setting of its hyper-parameter and parameter \cite{lu2011investigating}. In terms of robustness, Wang et al. proposed a model-based approach to make LDA more robust by using localization and empirical Bayes \cite{wang2018general}.
 
-[To be investigated: More specific goal of analysis - what does document clustering really looklike? ]
+
 
 
 \subsection{Latent Dirichlet Allocation (LDA)}
 
-Here, we reproduce the LDA model introduced in \cite{wang2018general}.
+Here, we reproduce the LDA model described in \cite{wang2018general}.
 
-[To be completed]
+We define each topic $\beta_k$ to be a distribution over a fixed vocabulary and we fix the number of topics $K$. LDA assumes that a collection of documents comes from the following process:
+
+\begin{enumerate}
+  \item Draw each topic $\beta_k \sim Dir(\eta)$ for k = 1, 2, ..., K.
+  \item For each document $d$ ($d = 1, ..., D$),
+  \begin{enumerate}
+    \item Draw topic proportion $\theta_d \sim Dir(\alpha)$
+    \item For each word $n$ ($n = 1, ..., N_d$) in document $d$,
+    \begin{enumerate}
+      \item Draw topic assignment of the word $z_{dn} \sim Mult(\theta_d)$.
+      \item Draw word $w_{dn} \sim Mult(\beta_{z_{dn}})$.
+    \end{enumerate}
+  \end{enumerate}
+\end{enumerate}
+
+See Figure \ref{fig:gaphical_model_lda} for a graphical representation of LDA.
+
+\begin{figure}[h]
+  \centering
+  \begin{tikzpicture}
+
+    % Nodes
+    \node[obs] (w) {$w_{dn}$}; %word
+    \node[latent, right=of w] (beta) {$\beta_k$}; %topic
+    \node[latent, right=of beta] (eta) {$\eta$}; % eta
+    \node[latent, left=of w] (z) {$z_{dn}$}; % topic assignment of word
+    \node[latent, left=of z] (theta) {$\theta_d$}; % topic proportion of a document
+    \node[latent, left=of theta] (alpha) {$\alpha$}; % hyperparameter alpha
+  
+    % Edge
+    \edge {beta} {w}; % arrow pointing from topic to word
+    \edge {eta} {beta}; % arrow pointing fromm eta to beta
+    \edge {z} {w} % arrow pointing from topic assignment to word
+    \edge {theta} {z} % arrow pointing from topic porportion of a document to topic assignment of a word
+    \edge {alpha} {theta} % arrow pointing from hyperparameter alpha to topic proportion of a document
+  
+    % Plates
+    \plate {wordPlate} {(w)(z)} {$N_d$};
+    \plate {documentPlate} {(wordPlate)(theta)} {$D$};
+    \plate {} {(beta)} {$K$};
+  
+  \end{tikzpicture}
+  \caption{The graphical model of LDA. Adopted from Blei \cite{blei2012probablistic}.}
+  \label{fig:gaphical_model_lda}
+\end{figure}
+
 
 
 
@@ -170,6 +217,7 @@ Title: A correlated topic model of science. Used for justifying using perplexity
 \begin{enumerate}
   \item document belonging to more than one category possible? Definitely - LDA is a mixture model. Other uses of topic model in text clustering? How are things often done in clustering research? 
   \item Outlier categories?
+  \item To be investigated: More specific goal of analysis - what does document clustering really looklike?
 \end{enumerate}
 
 
