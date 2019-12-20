@@ -53,6 +53,16 @@
 Three main tasks in textmining are clustering, classification, and information extraction \cite{allahyari2017brief}. Topic modeling can be applied to all of these tasks \cite{lu2011investigating}. We would like to focus on the most commonly used topic model, Latent Dirichlet Allocation (LDA), and LDA's robustness in the documeng clustering task. Lu et al. investigated LDA's task performance in document clustering and found LDA's performance is quite sensitive to the setting of its hyper-parameter and parameter \cite{lu2011investigating}. In terms of robustness, Wang et al. proposed a model-based approach to make LDA more robust by using localization and empirical Bayes \cite{wang2018general}.
 
 
+\subsection{Viewpoints of document clustering}
+
+\begin{itemize}
+  \item hard clustering, soft clustering
+  \item model-based clustering, distance-based clustering
+  \item flat clustering, hierarchical clustering
+  \item single group, multi-label
+  \item special qualities of textdata and how traditional clustering algorithms are modified to accomodate for such speciality
+\end{itemize}
+
 
 
 \subsection{Latent Dirichlet Allocation (LDA)}
@@ -121,7 +131,55 @@ See Figure \ref{fig:gaphical_model_lda} for a directed graphical model of LDA.
 \end{figure}
 
 
+\subsubsection{Likelihood functions of LDA}
 
+\begin{align}
+  p_d(w | \{\boldsymbol{\beta}_k\}_{1:K}, \boldsymbol{\theta}_d) = \sum_{k = 1}^K \theta_{dk} p(w | \boldsymbol{\beta}_k)
+\end{align}
+
+\begin{align}
+  & p(d | \boldsymbol{\alpha}, \{\boldsymbol{\beta}_k\}_{1:K}) \\
+  & = \int \left\{ \prod_{w \in V} \left[ \sum_{k = 1}^K \theta_{dk} p(w | \boldsymbol{\beta}_k) \right]^{c(w,d)} \right\} p(\boldsymbol{\theta}_d | \boldsymbol{\alpha}) d\boldsymbol{\theta}_d
+\end{align}
+
+Derivations are in appendix.
+
+
+
+\subsection{Robust LDA}
+
+In this section, we elaborate \cite{wang2018general}.
+
+
+\subsubsection{Likelihood functions of Robust LDA}
+
+\begin{align}
+  & p(d | \boldsymbol{\alpha}, \{\boldsymbol{\beta}_k\}_{1:K}) \\
+  & = \int \left\{ \prod_{w \in V} \left[ \sum_{k = 1}^K \theta_{dk} p(w | \boldsymbol{\beta}_{dk}) \right]^{c(w,d)} \right\} p(\boldsymbol{\theta}_d | \boldsymbol{\alpha}) d\boldsymbol{\theta}_d
+\end{align}
+
+
+\subsection{Evaluation}
+
+
+\subsubsection{Evaluation of Clustering}
+
+\begin{itemize}
+  \item Internal criterion
+  \item External criterion
+  \begin{itemize}
+    \item Purity
+    \item Normalized mutual information (NMI)
+    \item Rand index
+    \item F measure
+  \end{itemize}
+\end{itemize}
+\cite{manning2008iir}
+
+
+\subsubsection{Evaluation of Topic Models}
+
+Perplexity.
 
 
 \section{Pilot Experiment}
@@ -235,6 +293,13 @@ Title: A correlated topic model of science. Used for justifying using perplexity
   \item Outlier categories?
   \item To be investigated: More specific goal of analysis - what does document clustering really looklike?
 \end{enumerate}
+
+
+
+\section{Appendix}
+
+
+\subsection{Derivations of Likelihood functions of LDA}
 
 
 \bibliography{tm-bib}

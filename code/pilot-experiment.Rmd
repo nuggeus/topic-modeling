@@ -218,7 +218,10 @@ dev.off()
 # Comparison using different alphas using VEM
 
 ```{r}
-alphas <- c(0.01, 0.1, 1, 5, 10, 25)
+# alphas <- c(0.01, 0.1, 1, 5, 10, 25)
+# alphas <- seq(from = 0.00001, to = 0.01, length.out = 30)
+# alphas <- c(0.00001, 0.0001, 0.001, 0.01)
+alphas <- c(seq(from = 0.001, to = 0.009, length.out = 15), seq(from = 0.01, to = 1, length.out = 15))
 k <- 3
 perplexities_vem_diff_alpha <- vector(mode = "numeric", length = 0)
 
